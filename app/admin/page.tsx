@@ -212,7 +212,7 @@ export default function AdminPage() {
         <div className="admin-toolbar">
           <label className="admin-search"><span aria-hidden="true">⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索姓名、班级、标题或联系方式" aria-label="搜索投稿" /></label>
           <select value={activity} onChange={(event) => setActivity(event.target.value as 'all' | Activity)} aria-label="按活动筛选">
-            <option value="all">全部活动</option><option value="holiday">晒晒我的国庆假期</option><option value="poem">我为祖国写首诗</option>
+            <option value="all">全部活动</option><option value="holiday">{ACTIVITY_LABELS.holiday}</option><option value="poem">{ACTIVITY_LABELS.poem}</option>
           </select>
           <span className="admin-filter-count">显示 {visibleRecords.length} / {records.length}</span>
         </div>

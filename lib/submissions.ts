@@ -28,7 +28,7 @@ export interface Submission {
 }
 
 export const ACTIVITY_LABELS: Record<Activity, string> = {
-  holiday: '晒晒我的国庆假期',
+  holiday: '我眼中的家国记忆',
   poem: '我为祖国写首诗',
 };
 

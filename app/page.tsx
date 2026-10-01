@@ -2,7 +2,7 @@
 
 import { type ChangeEvent, type FormEvent, useEffect, useRef, useState } from 'react';
 import type { Activity, AttachmentMeta } from '@/lib/submissions';
-import { FORMATS_BY_ACTIVITY, MAX_IMAGE_BYTES, MAX_PHOTO_IMAGES, MAX_COLLECTION_IMAGES } from '@/lib/submissions';
+import { ACTIVITY_LABELS, FORMATS_BY_ACTIVITY, MAX_IMAGE_BYTES, MAX_PHOTO_IMAGES, MAX_COLLECTION_IMAGES } from '@/lib/submissions';
 import OriginalHome from './original-home';
 
 const MAX_VIDEO_SECONDS = 120;
@@ -307,7 +307,7 @@ export default function Home() {
           <section className="form-group" aria-labelledby="work-heading">
             <div className="form-group__heading"><span className="step-number">02</span><div><h3 id="work-heading">作品信息</h3><p>选择活动和作品形式</p></div></div>
             <div className="field-grid field-grid--two">
-              <div className="field"><label htmlFor="activity">投稿活动 <span className="required">*</span></label><select id="activity" name="activity" value={activity} onChange={(event) => changeActivity(event.target.value as Activity)}><option value="holiday">活动一 · 晒晒我的国庆假期</option><option value="poem">活动二 · 我为祖国写首诗</option></select></div>
+              <div className="field"><label htmlFor="activity">投稿活动 <span className="required">*</span></label><select id="activity" name="activity" value={activity} onChange={(event) => changeActivity(event.target.value as Activity)}><option value="holiday">活动一 · {ACTIVITY_LABELS.holiday}</option><option value="poem">活动二 · {ACTIVITY_LABELS.poem}</option></select></div>
               <div className="field"><label htmlFor="format">作品形式 <span className="required">*</span></label><select id="format" name="format" value={format} onChange={(event) => changeFormat(event.target.value)} aria-invalid={!!errors.format}><option value="" disabled>请选择作品形式</option>{FORMATS_BY_ACTIVITY[activity].map((item) => <option key={item} value={item}>{item}</option>)}</select>{errors.format && <small className="field-error">{errors.format}</small>}</div>
               {format === '其他' && <div className="field field--wide"><label htmlFor="otherFormat">其他作品形式 <span className="required">*</span></label><input id="otherFormat" value={otherFormat} maxLength={30} onChange={(event) => { setOtherFormat(event.target.value); clearError('otherFormat'); }} aria-invalid={!!errors.otherFormat} placeholder="请填写作品形式" />{errors.otherFormat && <small className="field-error">{errors.otherFormat}</small>}</div>}
               <div className="field field--wide"><label htmlFor="title">作品标题 <span className="required">*</span></label><input id="title" name="title" maxLength={60} value={title} onChange={(event) => { setTitle(event.target.value); clearError('title'); }} aria-invalid={!!errors.title} placeholder="给你的作品起个名字" />{errors.title && <small className="field-error">{errors.title}</small>}</div>
