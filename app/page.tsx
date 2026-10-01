@@ -13,18 +13,30 @@ function formatBytes(bytes: number) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
-async function uploadMedia(file: File): Promise<AttachmentMeta> {
-  const response = await fetch('/api/uploads', {
-    method: 'POST',
-    headers: {
-      'Content-Type': file.type || 'application/octet-stream',
-      'X-Upload-Name': encodeURIComponent(file.name),
-    },
-    body: file,
-  });
-  const result = await response.json() as AttachmentMeta & { error?: string };
-  if (!response.ok) throw new Error(result.error || '附件上传失败');
-  return result;
+function uploadMedia(file: File, onProgress: (loaded: number, awaitingResponse: boolean) => void): Promise<AttachmentMeta> {
+  const { promise, resolve, reject } = Promise.withResolvers<AttachmentMeta>();
+  const request = new XMLHttpRequest();
+  request.upload.onprogress = (event) => onProgress(Math.min(event.loaded, file.size), false);
+  request.upload.onload = () => onProgress(file.size, true);
+  request.onload = () => {
+    try {
+      const result = JSON.parse(request.responseText) as AttachmentMeta & { error?: string };
+      if (request.status < 200 || request.status >= 300) {
+        reject(new Error(result.error || '附件上传失败'));
+        return;
+      }
+      resolve(result);
+    } catch {
+      reject(new Error(`服务器响应异常（HTTP ${request.status}），请重试。`));
+    }
+  };
+  request.onerror = () => reject(new Error('网络连接中断，附件上传失败，请重试。'));
+  request.onabort = () => reject(new Error('附件上传已取消。'));
+  request.open('POST', '/api/uploads');
+  request.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+  request.setRequestHeader('X-Upload-Name', encodeURIComponent(file.name));
+  request.send(file);
+  return promise;
 }
 
 async function discardUploads(attachments: AttachmentMeta[]) {
@@ -61,6 +73,7 @@ export default function Home() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ name: string; index: number; count: number; loaded: number; total: number; awaitingResponse: boolean } | null>(null);
   const [maxFileMb, setMaxFileMb] = useState(250);
   const [remaining, setRemaining] = useState<number | null>(null);
   const [successFeedback, setSuccessFeedback] = useState<{ id: number; message: string } | null>(null);
@@ -130,7 +143,15 @@ export default function Home() {
     setStatus('正在将原图上传到活动服务器…');
     const uploaded: AttachmentMeta[] = [];
     try {
-      for (const file of accepted) uploaded.push(await uploadMedia(file));
+      const totalBytes = accepted.reduce((total, file) => total + file.size, 0);
+      let completedBytes = 0;
+      for (const [index, file] of accepted.entries()) {
+        setUploadProgress({ name: file.name, index: index + 1, count: accepted.length, loaded: completedBytes, total: totalBytes, awaitingResponse: false });
+        uploaded.push(await uploadMedia(file, (loaded, awaitingResponse) => {
+          setUploadProgress({ name: file.name, index: index + 1, count: accepted.length, loaded: completedBytes + loaded, total: totalBytes, awaitingResponse });
+        }));
+        completedBytes += file.size;
+      }
       setImages((current) => [...current, ...uploaded]);
       if (selected.length > room) setErrors((old) => ({ ...old, images: `最多 ${maxImages} 张，本次只添加前 ${room} 张。` }));
       else clearError('images');
@@ -141,6 +162,7 @@ export default function Home() {
       setErrors((old) => ({ ...old, images: error instanceof Error ? error.message : '图片上传失败，请重试。' }));
       setStatus('');
     } finally {
+      setUploadProgress(null);
       setBusy(false);
     }
   }
@@ -160,7 +182,10 @@ export default function Home() {
       if (!Number.isFinite(duration)) throw new Error('无法读取视频时长，请换一个视频文件');
       if (duration > MAX_VIDEO_SECONDS) throw new Error('视频时长不能超过 2 分钟，请剪辑后重新选择');
       setStatus('正在将视频原文件上传到活动服务器…');
-      setVideo(await uploadMedia(selected));
+      setUploadProgress({ name: selected.name, index: 1, count: 1, loaded: 0, total: selected.size, awaitingResponse: false });
+      setVideo(await uploadMedia(selected, (loaded, awaitingResponse) => {
+        setUploadProgress({ name: selected.name, index: 1, count: 1, loaded, total: selected.size, awaitingResponse });
+      }));
       clearError('video');
       setStatus('视频原文件已保存到活动服务器，未压缩。');
       setSuccessFeedback({ id: Date.now(), message: '视频上传成功' });
@@ -169,6 +194,7 @@ export default function Home() {
       setErrors((old) => ({ ...old, video: error instanceof Error ? error.message : '视频上传失败' }));
       setStatus('');
     } finally {
+      setUploadProgress(null);
       setBusy(false);
     }
   }
@@ -303,6 +329,12 @@ export default function Home() {
               <p className="upload-help" id="image-help">手账、绘画、诗歌手稿等图片作品也可在这里添加。</p>
               {images.map((image) => <div className="file-row" key={image.id}><span className="file-row__type">图片</span><span className="file-row__name">{image.name}</span><span className="file-row__size">{formatBytes(image.size)}</span><button type="button" disabled={busy} onClick={() => discardAttachment(image)} aria-label={`移除图片 ${image.name}`}>移除</button></div>)}
               {errors.images && <small className="field-error">{errors.images}</small>}
+            </div>}
+            {uploadProgress && <div className="upload-progress" aria-busy="true">
+              <div className="upload-progress-heading"><strong>{uploadProgress.awaitingResponse ? '等待服务器保存…' : '正在上传…'}</strong><span>{Math.floor(uploadProgress.total > 0 ? uploadProgress.loaded / uploadProgress.total * 100 : 0)}%</span></div>
+              <progress max={uploadProgress.total || 1} value={uploadProgress.loaded} aria-label="附件上传进度" />
+              <div className="upload-progress-details"><span className="upload-progress-filename" title={uploadProgress.name}>文件 {uploadProgress.index}/{uploadProgress.count} · {uploadProgress.name}</span><span>{formatBytes(uploadProgress.loaded)} / {formatBytes(uploadProgress.total)}</span></div>
+              {uploadProgress.awaitingResponse && <small>文件已传输，收到服务器确认后才算上传成功。</small>}
             </div>}
           </section>
 </fieldset>

@@ -128,6 +128,17 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .upload-action { margin-left: auto; padding: 8px 13px; color: var(--red); border: 1px solid #d8bdad; border-radius: 3px; font-size: 11px; font-weight: 700; }
 .upload-picker:hover .upload-action { color: white; background: var(--red); border-color: var(--red); }
 .upload-help { margin: 10px 0 0 50px; line-height: 1.6; }
+.upload-progress { margin-top: 14px; padding: 14px 16px; border: 1px solid #e3d7c5; border-radius: 6px; background: #faf6ed; }
+.upload-progress-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--red); font-size: 12px; }
+.upload-progress-heading span { font-variant-numeric: tabular-nums; }
+.upload-progress progress { display: block; width: 100%; height: 9px; margin: 10px 0; overflow: hidden; appearance: none; border: 0; border-radius: 999px; background: #e9dfd1; accent-color: var(--red); }
+.upload-progress progress::-webkit-progress-bar { background: #e9dfd1; border-radius: 999px; }
+.upload-progress progress::-webkit-progress-value { background: linear-gradient(90deg, var(--red), #d6a862); border-radius: 999px; }
+.upload-progress progress::-moz-progress-bar { background: var(--red); border-radius: 999px; }
+.upload-progress-details { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 14px; color: var(--muted); font-size: 10px; }
+.upload-progress-filename { min-width: 0; flex: 1 1 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.upload-progress-details > span:last-child { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.upload-progress small { display: block; margin-top: 8px; color: var(--muted); font-size: 10px; line-height: 1.6; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; clip-path: inset(50%); }
 .file-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; padding: 9px 10px; background: var(--white); border: 1px solid #e7e0d6; border-radius: 4px; font-size: 11px; }
 .file-row__type { flex: 0 0 auto; padding: 4px 6px; color: var(--red); background: #f7ece7; border-radius: 2px; font-size: 9px; }
