@@ -1,0 +1,15 @@
+services:
+  submissions:
+    build: .
+    container_name: national-day-submissions
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      NODE_ENV: production
+      DATA_DIR: /app/data
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env}
+      ADMIN_SESSION_SECRET: ${ADMIN_SESSION_SECRET:?Set ADMIN_SESSION_SECRET in .env}
+      MAX_MEDIA_FILE_MB: ${MAX_MEDIA_FILE_MB:-250}
+    volumes:
+      - ${DATA_PATH:-./data}:/app/data
